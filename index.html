@@ -1,0 +1,20 @@
+<!DOCTYPE html><html lang="hu"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Highway Racing</title>
+<link rel="stylesheet" href="css/style.css">
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}</script></head><body>
+<div id="game"></div>
+<div id="hud" hidden>
+ <div class="row"><b id="spd">0</b> km/h <span id="limit"></span> <span id="road"></span></div>
+ <div class="row">HP <i class="bar"><u id="hpb"></u></i> ⛽ <i class="bar"><u id="fub"></u></i></div>
+ <div class="row">Pont: <b id="score">0</b> · Táv: <b id="dist">0</b> km</div>
+ <div id="next"></div><div id="warn"></div><div id="prompt"></div><div id="toast"></div>
+</div>
+<div id="menu" class="ov"><h1>HIGHWAY RACING</h1>
+ <button id="play">Játék indítása</button>
+ <p>↑/W gáz · ↓/S/Szóköz fék · ←→/A D kormány<br>Csomópontnál/lehajtónál kormányozz a kívánt ágra. Megállva: F tankol · R javít · Enter vissza a pályára</p>
+ <label>Hangerő <input id="vol" type="range" min="0" max="100" value="50"></label> <label><input id="mute" type="checkbox"> Némítás</label>
+ <table><thead><tr><th>#</th><th>Név</th><th>Pont</th><th>Időpont</th></tr></thead><tbody id="lb1"></tbody></table></div>
+<div id="over" class="ov" hidden><h1>JÁTÉK VÉGE</h1><p id="why"></p><h2 id="fs"></h2>
+ <input id="name" maxlength="16" placeholder="Neved"> <button id="save">Mentés</button> <span id="msg"></span>
+ <table><thead><tr><th>#</th><th>Név</th><th>Pont</th><th>Időpont</th></tr></thead><tbody id="lb2"></tbody></table>
+ <button id="again">Újra</button> <button id="tomenu">Főmenü</button></div>
+<script type="module" src="js/main.js"></script></body></html>
