@@ -14,7 +14,7 @@ export function laneXs(seg,s){
  if(t.work&&s>seg.w0&&s<seg.w1)return{fwd:[c+2.7],opp:[]}; // 1,5 sáv elzárva: csak a jobb oldali 5,4 m marad
  return{fwd:all.slice(t.oncoming),opp:all.slice(0,t.oncoming)};}
 export function makeSeg(tid,s0,cx){
- const t=TYPES[tid],L=R(4200,5600),seg={t,s0,cx,L,end:s0+L,jStart:s0+L-450,w0:s0+700,w1:s0+L-1500};
+ const t=TYPES[tid],L=R(2200,3000),seg={t,s0,cx,L,end:s0+L,jStart:s0+L-450,w0:s0+500,w1:s0+L-900};
  const n=1+(Math.random()*5|0),others=Object.keys(TYPES).filter(k=>k!==tid),cnt=[0,0];
  seg.opts=[{dx:0,type:tid,label:t.label,dir:'↑'}];
  for(let i=0;i<n;i++){const sd=i%2?-1:1,j=cnt[i%2]++,k=Math.random()<.55?{type:pick(others)}:{station:pick(Object.keys(STATIONS))};
