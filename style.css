@@ -5,3 +5,6 @@
 .ov{position:fixed;inset:0;background:#000b;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;overflow:auto}
 button{font-size:18px;padding:8px 18px;border:0;border-radius:6px;background:#e33;color:#fff;cursor:pointer}#name{font-size:18px;padding:6px}
 table{border-collapse:collapse;min-width:420px}td,th{padding:3px 10px;border-bottom:1px solid #fff3;text-align:left}
+#stc{background:#111d;padding:20px 28px;border-radius:10px;max-width:660px}#st{background:#0008}
+#mgb{position:relative;height:34px;background:#333;border:2px solid #fff;margin:12px 0}#mgz{position:absolute;top:0;bottom:0;background:#2c4}#mgm{position:absolute;top:-4px;bottom:-4px;width:6px;background:#fff;margin-left:-3px}
+.up{margin:10px 0;text-align:left}.pips i{display:inline-block;width:18px;height:12px;background:#444;margin-right:2px}.pips i.on{background:#4c4}button:disabled{opacity:.4;cursor:default}.wr{color:#fa4}

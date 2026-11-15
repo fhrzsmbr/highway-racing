@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import {TYPES,STATIONS,STATION_T,LW,hw,makeSeg} from './roads.js';
+import {TYPES,STATIONS,STATION_T,LW,DIV,hw,makeSeg} from './roads.js';
 import {Traffic} from './traffic.js';
 import * as LB from './leaderboard.js';
 import {Sound} from './audio.js';
@@ -15,6 +15,9 @@ const car=new THREE.Group(),body=box(1.9,.6,4.2,0xd02020),cab=box(1.6,.5,2.1,0x2
 for(const x of[-1,1])for(const z of[-1.4,1.4]){const w=box(.3,.6,.7,0x111111);w.position.set(x*.95,.3,z);car.add(w);}
 const tl=new THREE.Mesh(new THREE.BoxGeometry(1.5,.15,.1),new THREE.MeshBasicMaterial({color:0xff0000}));tl.position.set(0,.65,2.1);car.add(tl);
 const smoke=new THREE.Mesh(new THREE.SphereGeometry(.8,8,8),new THREE.MeshBasicMaterial({color:0x888888,transparent:true,opacity:.5}));smoke.position.set(0,1.3,-1.6);car.add(smoke);scene.add(car);
+const wingM=box(2,.08,.6,0x111111),exM=new THREE.Group(),kitM=new THREE.Group();wingM.position.set(0,1.25,2.05);car.add(wingM);
+for(const x of[-.5,.5]){const p=box(.2,.2,.3,0xbbbbbb);p.position.set(x,.3,2.2);exM.add(p);}car.add(exM);
+for(const x of[-1,1]){const k=box(.1,.2,3,0x222222);k.position.set(x,.2,0);kitM.add(k);}car.add(kitM);
 const trees=[];for(let i=0;i<80;i++){const g=new THREE.Group(),a=box(.5,2.5,.5,0x5a3a1e),b=box(3,3.5,3,0x1f5a2a);a.position.y=1.25;b.position.y=4;g.add(a,b);scene.add(g);trees.push(g);}
 const traffic=new Traffic(scene);
 // ---- úthálózat építése
@@ -23,10 +26,26 @@ function roadTex(t,len){const w=Math.round(hw(t)*2*16),c=document.createElement(
  for(let i=1;i<t.lanes;i++){const x=(1.2+i*LW)*16;if(t.oncoming&&i==t.oncoming){g.fillStyle='#e8c020';g.fillRect(x-5,0,3,160);g.fillRect(x+2,0,3,160);}else{g.fillStyle='#ddd';g.fillRect(x-2,0,4,70);}}
  const tx=new THREE.CanvasTexture(c);tx.wrapT=THREE.RepeatWrapping;tx.repeat.set(1,len/10);tx.colorSpace=THREE.SRGBColorSpace;return tx;}
 function ribbon(t,s0,len,cx){const m=new THREE.Mesh(new THREE.PlaneGeometry(hw(t)*2,len),new THREE.MeshLambertMaterial({map:roadTex(t,len)}));m.rotation.x=-Math.PI/2;m.position.set(cx,0,-(s0+len/2));scene.add(m);return m;}
-function strip(sg,o){const n=24,P=[],U=[],I=[],e=Math.sign(o.dx)*(hw(sg.t)+3),w=3;
- for(let i=0;i<=n;i++){const u=i/n,s=sg.jStart+450*u,x=sg.cx+e+(o.dx-e)*sm(u);P.push(x-w,.02,-s,x+w,.02,-s);U.push(0,u,1,u);if(i<n){const a=i*2;I.push(a,a+1,a+2,a+1,a+3,a+2);}}
+function strip(sg,o){const n=24,P=[],U=[],I=[],e=Math.sign(o.dx)*(hw(sg.t)-1.2);
+ for(let i=0;i<=n;i++){const u=i/n,s=sg.jStart+DIV*u,x=sg.cx+e+(o.dx-e)*sm(u),w=3*Math.min(1,.12+u*3);P.push(x-w,.03,-s,x+w,.03,-s);U.push(0,u,1,u);if(i<n){const a=i*2;I.push(a,a+1,a+2,a+1,a+3,a+2);}}
  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(U,2));g.setIndex(I);g.computeVertexNormals();
- const m=new THREE.Mesh(g,new THREE.MeshLambertMaterial({map:roadTex(STATION_T,450),side:THREE.DoubleSide}));scene.add(m);return m;}
+ const m=new THREE.Mesh(g,new THREE.MeshLambertMaterial({map:roadTex(STATION_T,DIV),side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4}));scene.add(m);return m;}
+function fan(sg,s,d){const ops=[...sg.opts].sort((a,b)=>a.dx-b.dx),n=ops.length,W=1536,H=400,c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d');
+ g.fillStyle='#0b5a34';g.fillRect(0,0,W,H);g.strokeStyle='#fff';g.lineWidth=10;g.strokeRect(5,5,W-10,H-10);g.fillStyle='#fff';g.textAlign='left';g.font='bold 70px sans-serif';g.fillText(d+' m',30,75);
+ const cw=W/n,span=hw(sg.t)+42;g.textAlign='center';
+ ops.forEach((o,i)=>{const m=i*cw+cw/2,st=o.type?[TYPES[o.type].id,TYPES[o.type].sub]:[o.label.split(' ')[0],o.label.split(' ').slice(1).join(' ')];
+  g.fillStyle=o.col;g.fillRect(i*cw+10,95,cw-20,85);g.fillStyle='#fff';g.font='bold 66px sans-serif';g.fillText(st[0],m,160);
+  const tip=m+Math.max(-1,Math.min(1,o.dx/span))*cw*.32,an=Math.atan2(-95,tip-m);g.strokeStyle='#fff';g.lineWidth=16;g.beginPath();g.moveTo(m,330);g.lineTo(tip,235);g.stroke();
+  g.beginPath();for(const k of[0,2.2,-2.2])g.lineTo(tip+Math.cos(an+k)*30,235+Math.sin(an+k)*30);g.fill();
+  g.font='bold 34px sans-serif';g.fillText(st[1],m,380);});
+ const tx=new THREE.CanvasTexture(c);tx.colorSpace=THREE.SRGBColorSpace;const Wm=22;
+ const p=new THREE.Mesh(new THREE.PlaneGeometry(Wm,Wm*H/W),new THREE.MeshBasicMaterial({map:tx}));p.position.set(sg.cx,7.4,-s);scene.add(p);sg.objs.push(p);
+ for(const d2 of[-1,1]){const q=box(.5,7.4,.5,0x888888);q.position.set(sg.cx+d2*(Wm/2-.5),3.7,-s);scene.add(q);sg.objs.push(q);}}
+function panel(sg,o){const c=document.createElement('canvas');c.width=512;c.height=160;const g=c.getContext('2d');g.fillStyle=o.col;g.fillRect(0,0,512,160);g.fillStyle='#fff';g.textAlign='center';g.font='bold 80px sans-serif';
+ g.fillText(o.type?TYPES[o.type].id:o.label.split(' ')[0],256,80);g.font='bold 38px sans-serif';g.fillText(o.type?TYPES[o.type].sub:o.label.split(' ').slice(1).join(' '),256,138);
+ const tx=new THREE.CanvasTexture(c);tx.colorSpace=THREE.SRGBColorSpace;const e=Math.sign(o.dx)*(hw(sg.t)-1.2),x=sg.cx+e+(o.dx-e)*sm(.6);
+ const p=new THREE.Mesh(new THREE.PlaneGeometry(7,2.2),new THREE.MeshBasicMaterial({map:tx}));p.position.set(x,5.6,-(sg.jStart+DIV*.6));scene.add(p);
+ const q=box(.3,4.5,.3,0x888888);q.position.set(x,2.25,-(sg.jStart+DIV*.6));scene.add(q);return [p,q];}
 function sign(sg,s,head,lines){const c=document.createElement('canvas');c.width=1024;c.height=320;const g=c.getContext('2d');
  g.fillStyle='#0b6b3a';g.fillRect(0,0,1024,320);g.strokeStyle='#fff';g.lineWidth=8;g.strokeRect(6,6,1012,308);g.fillStyle='#fff';g.font='bold 54px sans-serif';g.fillText(head,30,64);
  g.font='bold 40px sans-serif';lines.forEach((l,i)=>g.fillText(l,30+(i%2)*500,130+(i>>1)*60));
@@ -35,44 +54,75 @@ function sign(sg,s,head,lines){const c=document.createElement('canvas');c.width=
  for(const d of[-1,1]){const q=box(.4,7,.4,0x888888);q.position.set(sg.cx+d*(hw(sg.t)+.8),3.5,-s);scene.add(q);sg.objs.push(q);}}
 function build(sg){sg.objs=[ribbon(sg.t,sg.s0,sg.L,sg.cx)];sg.prev=[];
  const add=m=>{scene.add(m);sg.objs.push(m);return m;};
- if(sg.station){const b=add(box(8,5,30,{fuel:0xe0a020,rest:0x4080c0,service:0x888888}[sg.kind]));b.position.set(sg.cx+9,2.5,-(sg.end-30));
-  const l=add(box(7,.1,.6,0xffffff));l.position.set(sg.cx,.03,-(sg.end-14));sign(sg,sg.s0+40,STATIONS[sg.kind],['Állj meg a vonalnál']);return;}
+ if(sg.station){const bc=sg.bc=sg.end-40,b=add(box(8,5,30,{fuel:0xe0a020,rest:0x4080c0,service:0x888888}[sg.kind]));b.position.set(sg.cx+9,2.5,-bc);
+  const bm=sg.boxM=add(new THREE.Mesh(new THREE.PlaneGeometry(3.8,6.3),new THREE.MeshBasicMaterial({color:0xffcc00,transparent:true,opacity:.55,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4})));bm.rotation.x=-Math.PI/2;bm.position.set(sg.cx,.03,-bc);
+  for(const[x,z,w,l]of[[-1.95,0,.15,6.5],[1.95,0,.15,6.5],[0,-3.2,3.9,.15],[0,3.2,3.9,.15]]){const f=add(box(w,.06,l,0xffffff));f.position.set(sg.cx+x,.05,-bc+z);}
+  sign(sg,sg.s0+15,STATIONS[sg.kind],['Állj meg a sárga dobozban!']);return;}
  const len=sg.jStart-sg.s0;
  for(const sd of[-1,1]){const r=add(box(.3,.7,len,0x999999));r.position.set(sg.cx+sd*(hw(sg.t)+.5),.35,-(sg.s0+len/2));}
  if(sg.t.work){const b=add(box(5.4,.9,sg.w1-sg.w0,0xff7a00));b.position.set(sg.cx-2.7,.45,-(sg.w0+sg.w1)/2);
   sign(sg,sg.w0-250,'ÉPÍTKEZÉS 60 km/h',['1,5 sáv lezárva']);}
- sg.opts.slice(1).forEach(o=>add(strip(sg,o)));
- [1200,700,400,200].forEach(d=>sign(sg,sg.jStart-d,d+' m',sg.opts.map(o=>o.dir+' '+o.label)));
+ sg.opts.slice(1).forEach(o=>{add(strip(sg,o));panel(sg,o).forEach(m=>sg.objs.push(m));});
+ [500,250].forEach(d=>fan(sg,sg.jStart-d,d));
  const pv=(t,cx)=>sg.prev.push(ribbon(t,sg.end,900,cx));pv(sg.t,sg.cx);sg.opts.slice(1).forEach(o=>pv(o.station?STATION_T:TYPES[o.type],sg.cx+o.dx));}
 const rmList=l=>{(l||[]).forEach(m=>{scene.remove(m);m.geometry.dispose();m.material.map?.dispose();m.material.dispose();});};
 const rm=sg=>{rmList(sg.objs);rmList(sg.prev);sg.objs=[];sg.prev=[];};
 // ---- állapot
 let camX=0,state='menu',last=0,P,cur,old=[],score=0,dist=0,safe=0,tod=.3,rain=false,rainT=60,shake=0,toastT=0,keys={};
 const skyC=new THREE.Color();scene.fog=new THREE.FogExp2(0x88aacc,.0016);
-function reset(){old.forEach(rm);old=[];if(cur)rm(cur);traffic.clear();cur=makeSeg('M7',0,0);build(cur);P={s:0,x:1.8,v:20,vx:0,hp:100,fuel:100,cool:0,up:0};camX=1.8;score=0;dist=0;safe=0;}
+function reset(){old.forEach(rm);old=[];if(cur)rm(cur);traffic.clear();cur=makeSeg('M7',0,0);build(cur);P={s:0,x:1.8,v:20,vx:0,hp:100,fuel:100,cool:0,lv:{speed:0,motor:0,steer:0,brake:0,eco:0,wing:0,exhaust:0,kit:0}};camX=1.8;vis();score=0;dist=0;safe=0;}
 function advance(o){rmList(cur.prev);cur.prev=[];old.push(cur);
- cur=o.station?{t:STATION_T,station:true,kind:o.station,s0:cur.end,L:220,end:cur.end+220,cx:cur.cx+o.dx,opts:[],jStart:1e12}:makeSeg(o.type,cur.end,cur.cx+o.dx);build(cur);}
+ cur=o.station?{t:STATION_T,station:true,kind:o.station,s0:cur.end,L:140,end:cur.end+140,done:false,cx:cur.cx+o.dx,opts:[],jStart:1e12}:makeSeg(o.type,cur.end,cur.cx+o.dx);build(cur);}
 function choose(){const sg=cur;let o=sg.opts[0];
  if(Math.abs(P.x-sg.cx)>hw(sg.t)+1)o=sg.opts.slice(1).reduce((a,b)=>Math.abs(P.x-(sg.cx+b.dx))<Math.abs(P.x-(sg.cx+a.dx))?b:a);
  score+=o.dx?200:50;toast(o.dx?'+200 útvonalválasztás: '+o.label:'+50 egyenesen tovább');advance(o);}
 function toast(t){$('toast').textContent=t;toastT=2.5;}
 function hit(d,pv){P.hp-=d;P.v*=pv;P.cool=.7;shake=Math.min(1,d/15+.2);safe=0;score-=20+d*3;Sound.crash();}
-function action(c){if(!cur.station||P.v>1||P.s<cur.end-60)return;const k=cur.kind;
- if(c=='KeyF'&&(k=='fuel'||k=='rest'))P.fuel=Math.min(100,P.fuel+(k=='fuel'?100:20));
- if(c=='KeyR'&&(k=='service'||k=='rest'))P.hp=Math.min(100,P.hp+(k=='service'?100:15));
- if(c=='KeyU'&&(k=='service'||k=='rest')){if(P.up>=4)toast('Maximális motorszint');else if(score<300)toast('Kell hozzá 300 pont');else{score-=300;P.up++;toast('Motor upgrade! Szint: '+P.up+'/4 (+18 km/h végsebesség)');}}
- if(c=='Enter'||c=='KeyE'){const n=makeSeg(Object.keys(TYPES)[Math.random()*4|0],cur.end,cur.cx);old.push(cur);cur=n;build(n);P.v=0;}}
+function action(c){if(c=='Enter'&&cur.station&&P.v<1.5&&P.s>cur.bc+1.05)leave();}
+const CATS={speed:{n:'Végsebesség',d:'+9 km/h végsebesség szintenként, nő a fogyasztás',D:{spd:2.5}},
+ motor:{n:'Motor (gyorsulás)',d:'+8% gyorsulás szintenként, nő a fogyasztás',D:{acc:.08}},
+ steer:{n:'Kormányzás',d:'+6% kormányzás, stabilabb nagy sebességnél',D:{st:.06,sd:3}},
+ brake:{n:'Fékezés',d:'+8% fékerő szintenként',D:{br:.08}},
+ eco:{n:'Fogyasztás',d:'−5% fogyasztás szintenként',D:{eco:-.05}},
+ wing:{n:'Szárny (kozmetikai)',d:'+1,5% kormány, +2% fék, +1,5% fogyasztás / szint',D:{st:.015,br:.02,eco:.015}},
+ exhaust:{n:'Kipufogó (kozmetikai)',d:'+2% gyorsulás, +1,4 km/h, −0,5% kormány, +1% fogyasztás / szint',D:{acc:.02,spd:.4,st:-.005,eco:.01}},
+ kit:{n:'Aerokit (kozmetikai)',d:'+2 km/h, −1% kormány, −1% fogyasztás / szint',D:{spd:.55,st:-.01,eco:-.01}}};
+const UPG_AT={fuel:['eco'],service:['motor','speed'],rest:['steer','brake','wing','exhaust','kit']};
+function stats(){const L=P.lv,S={spd:0,acc:0,st:0,br:0,eco:0,sd:0};
+ for(const id in CATS)for(const k in CATS[id].D)S[k]+=CATS[id].D[k]*L[id];
+ const perf=L.speed+L.motor,imb=Math.min(.4,Math.max(0,perf-(L.steer+L.brake)-3)*.04); // aszimmetrikus fejlesztés büntetése
+ return{vb:61+S.spd,acc:1+S.acc,st:(1+S.st)*(1-imb),br:(1+S.br)*(1-imb),eco:Math.max(.4,1+S.eco)*(1+.03*perf),sd:45+S.sd,imb};}
+function vis(){const L=P.lv;wingM.visible=L.wing>0;wingM.scale.set(.6+.04*L.wing,1,1+.1*L.wing);exM.visible=L.exhaust>0;exM.scale.setScalar(.8+.05*L.exhaust);kitM.visible=L.kit>0;kitM.scale.set(1,1+.1*L.kit,1);}
+const MG={hz:[.16,.11,.07],sp:[2.2,3,3.8]};let ph='up',mg=null;
+function openStation(){state='stop';mg=cur.kind=='rest'?null:{r:0,t:0,sum:0,tz:R(.2,.8),pos:0,msg:'',amt:0};ph=mg?'mg':'up';show(['hud','st']);renderStation();}
+function mgTick(dt){if(ph!='mg')return;mg.t+=dt*MG.sp[mg.r];const u=(mg.t/Math.PI)%2;mg.pos=u<1?u:2-u;const m=$('mgm');if(m)m.style.left=mg.pos*100+'%';}
+function mgStop(){if(state!='stop'||ph!='mg')return;const d=Math.abs(mg.pos-mg.tz),hz=MG.hz[mg.r],p=d<hz*.35?34:d<hz?24:d<hz*2?12:3;
+ mg.sum+=p;mg.msg=p>=34?'TÖKÉLETES!':p>=24?'Jó!':p>=12?'Majdnem':'Mellé';mg.r++;mg.tz=R(.2,.8);
+ if(mg.r>=3){mg.amt=Math.min(100,mg.sum);if(cur.kind=='fuel')P.fuel=Math.min(100,P.fuel+mg.amt);else P.hp=Math.min(100,P.hp+mg.amt);ph='up';}renderStation();}
+function upHTML(){const sg=cur,S=stats();
+ return `<h2>Fejlesztések</h2><p>Pontszám: ${Math.floor(score)} · megállásonként 1 fejlesztés${sg.upDone?' (ezt a megállót már felhasználtad)':''}</p>`+UPG_AT[sg.kind].map(id=>{const c=CATS[id],l=P.lv[id],cost=100+60*l;
+  return `<div class="up"><b>${c.n}</b> <span class="pips">${'<i class="on"></i>'.repeat(l)}${'<i></i>'.repeat(10-l)}</span> ${l}/10<br><small>${c.d}</small><br><button data-id="${id}" ${sg.upDone||l>=10||score<cost?'disabled':''}>${l>=10?'MAX':'Fejlesztés – '+cost+' pont'}</button></div>`;}).join('')
+  +(S.imb?`<p class="wr">⚠ Kiegyensúlyozatlan autó: kormányzás és fék −${Math.round(S.imb*100)}%</p>`:'')+'<button id="go">Tovább az autópályára</button>';}
+function renderStation(){const sg=cur;let h;
+ if(ph=='mg'){const hz=MG.hz[mg.r];h=`<h1>${STATIONS[sg.kind]}</h1><p>${sg.kind=='fuel'?'Tankolás':'Javítás'}: nyomd meg a <b>Szóközt</b> (vagy a gombot), amikor a jelölő a zöld sávban van! (${mg.r+1}/3)</p><div id="mgb"><div id="mgz" style="left:${(mg.tz-hz)*100}%;width:${hz*200}%"></div><div id="mgm"></div></div><p>${mg.msg}</p><button id="mgs">STOP</button>`;}
+ else h=`<h1>${STATIONS[sg.kind]}</h1>`+(mg?`<p>${sg.kind=='fuel'?'Tankolva':'Javítva'}: +${mg.amt}%</p>`:'')+upHTML();
+ $('stc').innerHTML=h;
+ if(ph=='mg')$('mgs').onpointerdown=mgStop;else{$('go').onclick=leave;document.querySelectorAll('button[data-id]').forEach(b=>b.onclick=()=>buy(b.dataset.id));}}
+function buy(id){const l=P.lv[id],c=100+60*l;if(cur.upDone||l>=10||score<c)return;score-=c;P.lv[id]++;cur.upDone=true;vis();renderStation();}
+function leave(){const n=makeSeg(Object.keys(TYPES)[Math.random()*4|0],cur.end,cur.cx);old.push(cur);cur=n;build(n);P.v=0;state='play';show(['hud']);}
 function end(why){state='over';$('why').textContent=why;$('fs').textContent='Pontszám: '+Math.floor(score);$('save').disabled=false;$('msg').textContent='';show(['over']);refresh($('lb2'));Sound.engine(0,false);}
 function step(dt){
  const sg=cur,t=sg.t,up=keys.ArrowUp||keys.KeyW,dn=keys.ArrowDown||keys.KeyS||keys.Space,st=(keys.ArrowRight||keys.KeyD?1:0)-(keys.ArrowLeft||keys.KeyA?1:0);
- const dm=P.hp<50?.65+.35*P.hp/50:1,vb=61+5*P.up,vm=(sg.station?14:vb)*dm,off=!sg.station&&Math.abs(P.x-sg.cx)>hw(t)&&P.s<sg.jStart;
- if(up&&P.fuel>0&&P.v<vm)P.v+=14*(1-P.v/vm*.85)*dt;
- if(P.v>vm)P.v-=6*dt;if(dn)P.v-=32*dt;
+ const dm=P.hp<50?.65+.35*P.hp/50:1,S=stats(),vb=S.vb,vm=(sg.station?14:vb)*dm,off=!sg.station&&Math.abs(P.x-sg.cx)>hw(t)&&P.s<sg.jStart;
+ if(up&&P.fuel>0&&P.v<vm)P.v+=14*S.acc*(1-P.v/vm*.85)*dt;
+ if(P.v>vm)P.v-=6*dt;if(dn)P.v-=32*S.br*dt;
  const kk=61/vb;P.v-=(.015*P.v*kk+.0007*P.v*P.v*kk*kk)*dt*(P.fuel<=0?2:1)+(off?10*dt:0);P.v=Math.max(0,P.v);
- const tgt=st*(6+P.v*.12)/(1+P.v/45)*Math.min(1,P.v/6)*(P.hp<50?.7:1)*(rain?.85:1)+(P.hp<50?Math.sin(performance.now()/300)*1.2*(1-P.hp/50)*Math.min(1,P.v/10):0);
+ const tgt=st*S.st*(6+P.v*.12)/(1+P.v/S.sd)*Math.min(1,P.v/6)*(P.hp<50?.7:1)*(rain?.85:1)+(P.hp<50?Math.sin(performance.now()/300)*1.2*(1-P.hp/50)*Math.min(1,P.v/10):0);
  P.vx+=(tgt-P.vx)*Math.min(1,5*dt);P.x+=P.vx*dt;P.s+=P.v*dt;dist+=P.v*dt;P.cool-=dt;
- P.fuel=Math.max(0,P.fuel-(.03+.0035*P.v*(up?1:.6))*dt*(P.hp<25?2:1));if(P.hp<25)P.hp-=.6*dt;
- if(sg.station&&P.s>sg.end-14){P.s=sg.end-14;P.v=0;}
+ P.fuel=Math.max(0,P.fuel-(.03+.0035*P.v*(up?1:.6))*S.eco*dt*(P.hp<25?2:1));if(P.hp<25)P.hp-=.6*dt;
+ if(sg.station){if(!up)P.v=Math.max(0,P.v-3*dt);if(P.s>sg.end-8){P.s=sg.end-8;P.v=0;}
+  const ib=Math.abs(P.s-sg.bc)<=1.05&&Math.abs(P.x-sg.cx)<=.95;sg.boxM.material.color.set(ib?0x00ff66:0xffcc00);
+  if(ib&&P.v<1.2&&!sg.done){sg.done=true;P.v=0;openStation();return;}}
  if(!sg.station&&P.s>=sg.end)choose();
  const d=P.x-sg.cx,e=hw(t)+.3;
  if(!sg.station&&P.s<sg.jStart&&Math.abs(d)>e){P.x=sg.cx+Math.sign(d)*e;P.vx=-Math.sign(d)*3;if(P.cool<=0)hit(P.v*.5*t.risk,.7);}
@@ -96,10 +146,9 @@ function step(dt){
  $('score').textContent=Math.floor(score);$('dist').textContent=(dist/1000).toFixed(1);
  $('hpb').style.width=Math.max(0,P.hp)+'%';$('hpb').style.background=P.hp<25?'#e33':P.hp<50?'#ea3':'#4c4';$('fub').style.width=P.fuel+'%';$('fub').style.background=P.fuel<20?'#e33':'#4c4';
  const dj=Math.max(0,Math.round((sg.jStart-P.s)/10)*10);
- $('next').textContent=sg.station?'Lehajtó – állj meg a vonalnál':(dj>2600?'Következő csomópont: '+dj+' m':(dj>0?dj+' m: ':'ELÁGAZÁS! ')+sg.opts.map(o=>o.dir+o.label).join(' · '));
+ $('next').textContent=sg.station?'Lehajtó – állj meg a vonalnál':(dj>2600?'Következő csomópont: '+dj+' m':(dj>0?dj+' m: ':'ELÁGAZÁS! ')+[...sg.opts].sort((a,b)=>a.dx-b.dx).map(o=>o.dir+o.label).join(' · '));
  $('warn').textContent=[P.fuel<20?'⛽ ALACSONY ÜZEMANYAG':'',P.hp<50?'🔧 SÚLYOS SÉRÜLÉS':'',wrong?'⛔ SZEMBE SÁVBAN!':''].filter(Boolean).join('  ');
- const k=sg.kind,ready=sg.station&&P.v<1&&P.s>sg.end-60;
- $('prompt').textContent=ready?[(k=='fuel'||k=='rest')?'[F] tankolás':'',(k=='service'||k=='rest')?'[R] javítás':'',(k=='service'||k=='rest')?'[U] végsebesség-upgrade (300 pont, '+P.up+'/4)':'','[Enter] vissza az autópályára'].filter(Boolean).join(' · '):'';
+ $('prompt').textContent=sg.station?(P.s>sg.bc+1.05?'Kihagytad a dobozt – Enter: tovább':'Állj meg a sárga dobozban! (max. 1,5× autóhossz)'):'';
  if((toastT-=dt)<0)$('toast').textContent='';}
 function render(dt){
  if(state=='menu'){P.s=(P.s+22*dt)%3000;P.v=22;P.vx=0;}
@@ -110,16 +159,16 @@ function render(dt){
  const sh=shake*(Math.random()-.5);shake=Math.max(0,shake-dt*2.5);
  camX+=(P.x-camX)*Math.min(1,12*dt);cam.position.set(camX+sh,3.9+sh*.5,-P.s+9);cam.lookAt(camX,1.3,-P.s-18);cam.fov=64+P.v*.28;cam.updateProjectionMatrix();
  ground.position.set(P.x,-.08,-P.s);
- trees.forEach((g,i)=>{const sd=i%2?1:-1,ts=(Math.floor(P.s/40)+(i>>1)-5)*40;g.position.set(cur.cx+sd*(hw(cur.t)+34+Math.abs(Math.sin(ts*12.9+i))*20),0,-ts);});
+ trees.forEach((g,i)=>{const sd=i%2?1:-1,ts=(Math.floor(P.s/40)+(i>>1)-5)*40;g.position.set(cur.cx+sd*(hw(cur.t)+52+Math.abs(Math.sin(ts*12.9+i))*20),0,-ts);});
  Sound.engine(P.v,state=='play');ren.render(scene,cam);}
-function frame(t){requestAnimationFrame(frame);const dt=Math.min(.05,(t-last)/1000||0);last=t;if(state=='play')step(dt);render(dt);}
+function frame(t){requestAnimationFrame(frame);const dt=Math.min(.05,(t-last)/1000||0);last=t;if(state=='play')step(dt);else if(state=='stop')mgTick(dt);render(dt);}
 // ---- UI
-const show=ids=>['menu','over','hud'].forEach(i=>$(i).hidden=!ids.includes(i));
+const show=ids=>['menu','over','hud','st'].forEach(i=>$(i).hidden=!ids.includes(i));
 const refresh=el=>LB.top10().then(r=>LB.render(el,r)).catch(()=>el.innerHTML='<tr><td colspan=4>A ranglista nem elérhető</td></tr>');
 const vol=()=>Sound.vol=$('mute').checked?0:$('vol').value/100;$('vol').oninput=vol;$('mute').onchange=vol;
 const start=()=>{Sound.start();vol();reset();state='play';show(['hud']);};
 $('play').onclick=start;$('again').onclick=start;$('tomenu').onclick=()=>{state='menu';reset();show(['menu']);refresh($('lb1'));};
 $('save').onclick=async()=>{$('save').disabled=true;try{await LB.submit($('name').value.trim().slice(0,16)||'Anonim',Math.floor(score));$('msg').textContent='Mentve!';refresh($('lb2'));}catch(e){$('msg').textContent='Mentés sikertelen';$('save').disabled=false;}};
-addEventListener('keydown',e=>{keys[e.code]=true;if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();if(state=='play')action(e.code);});
+addEventListener('keydown',e=>{keys[e.code]=true;if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();if(state=='play')action(e.code);else if(state=='stop'&&!e.repeat&&(e.code=='Space'||e.code=='Enter'))mgStop();});
 addEventListener('keyup',e=>keys[e.code]=false);
 reset();refresh($('lb1'));requestAnimationFrame(frame);
