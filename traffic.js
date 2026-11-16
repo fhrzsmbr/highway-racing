@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import {laneXs,hw,LW,C,C1} from './roads.js';
+import {laneXs,H,LW,C,C1} from './roads.js';
 const K={car:{w:1.9,l:4.2,h:1.3,v:[28,38],p:.5},suv:{w:2.1,l:4.7,h:1.7,v:[26,34],p:.2},van:{w:2.2,l:5.6,h:2.1,v:[23,30],p:.12},truck:{w:2.5,l:10,h:3.2,v:[19,25],p:.12},bus:{w:2.6,l:11.5,h:3.2,v:[21,26],p:.06}};
 const R=(a,b)=>a+Math.random()*(b-a),M=c=>new THREE.MeshLambertMaterial({color:c});
 export class Traffic{
@@ -30,10 +30,10 @@ export class Traffic{
     c.s+=c.v*dt;}
    c.x+=Math.max(-2.4*dt,Math.min(2.4*dt,c.tx-c.x));
    c.m.position.set(c.x+C(c.s),0,-c.s);c.m.rotation.y=(c.opp?Math.PI:0)-Math.atan(C1(c.s));}
-  const onRoad=c=>c.opp&&seg.oc!=null?Math.abs(c.x-seg.oc)<6&&c.s>seg.o0-30&&c.s<seg.o1+30:Math.abs(c.x-seg.cx)<hw(seg.t)+1;
+  const onRoad=c=>Math.abs(c.x-seg.cx)<H(seg.t)+1;
   this.cars=this.cars.filter(c=>{const ok=c.s>P.s-200&&c.s<P.s+700&&onRoad(c);if(!ok)this.scene.remove(c.m);return ok;});
   if(seg.station)return;
   const n=this.cars.filter(c=>!c.opp&&c.s>P.s).length,no=this.cars.filter(c=>c.opp).length;
   if(n<seg.t.density*16&&Math.random()<dt*2)this.spawn(seg,P.s+R(300,600),false);
-  if((seg.t.oncoming||seg.oc!=null)&&no<8&&Math.random()<dt*1.2)this.spawn(seg,P.s+R(350,650),true);}
+  if(no<8&&Math.random()<dt*1.2)this.spawn(seg,P.s+R(350,650),true);}
 }
