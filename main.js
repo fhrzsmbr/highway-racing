@@ -111,7 +111,7 @@ function build(sg){sg.objs=[];sg.prev=[];const add=m=>{sg.objs.push(m);return m;
  if(sg.kind=='cross')crossDeck(sg,add);
  [500,250].forEach(d=>fan(sg,sg.jStart-d,d,add));
  sg.prev.push(...roads(t,sg.end,900,sg.cx,false));
- sg.opts.slice(1).forEach(o=>sg.prev.push(...(o.station?[ribbon(P1,sg.end,140,o.fx)]:roads(TYPES[o.type],sg.end,900,o.cx,!o.fork))));}
+ sg.opts.slice(1).forEach(o=>sg.prev.push(...(o.station?[ribbon(P1,sg.end,140,o.fx)]:roads(TYPES[o.type],sg.end,900,o.cx,!!o.ramp))));}
 const rmList=l=>{(l||[]).forEach(m=>{scene.remove(m);m.geometry.dispose();m.material.map?.dispose();m.material.dispose();});};
 const rm=sg=>{rmList(sg.objs);rmList(sg.prev);sg.objs=[];sg.prev=[];};
 // ---- állapot
@@ -123,7 +123,7 @@ function advance(o){const par=cur;rmList(par.prev);par.prev=[];old.push(par);
  if(o.station){ // a főút látható marad a lehajtó mellett, és ugyanarra a típusra/számra csatlakozunk vissza
   const bg=makeSeg(par.t.id,par.end,par.cx,par.name,false),st={t:STATION_T,station:true,kind:o.station,s0:par.end,L:140,end:par.end+140,cx:o.fx,opts:[],jStart:1e12,done:false,name:o.label,vend:par.end+140+MERGE,bg};
   bg.mg={s0:st.end,s1:st.end+MERGE,x0:st.cx,ex:par.cx+H(par.t)-1.2};cur=st;build(st);build(bg);}
- else{cur=makeSeg(o.type,par.end,o.cx,o.name,!o.fork);build(cur);}}
+ else{cur=makeSeg(o.type,par.end,o.cx??par.cx,o.name,!!o.ramp);build(cur);}}
 function choose(){const sg=cur,[lo,hi]=bnd(sg);let o=sg.opts[0],bd=Math.max(0,lo-P.x,P.x-hi);
  for(const q of sg.opts.slice(1)){const d=Math.abs(P.x-q.fx);if(d<bd){bd=d;o=q;}}
  score+=o.straight?50:200;toast(o.straight?'+50 egyenesen tovább':'+200 útvonalválasztás: '+o.label);advance(o);}

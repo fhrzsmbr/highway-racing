@@ -32,7 +32,7 @@ export function makeSeg(tid,s0,cx,name,tp){
  seg.xs.push({s:seg.jStart-150,k:'over',j:true});
  for(let i=0,m=1+(Math.random()*2|0);i<m;i++)seg.xs.push({s:R(s0+TR+450,seg.jStart-800),k:Math.random()<.5?'over':'under'});
  const Rr=H(t),fcs=cx+fc(t),add=o=>seg.opts.push(o);
- seg.opts=[{straight:1,dx:0,fx:fcs,type:tid,name:seg.name,label:seg.name,dir:'↑'}];
+ seg.opts=[{straight:1,dx:0,fx:fcs,cx,type:tid,name:seg.name,label:seg.name,dir:'↑'}];
  if(kind=='exit'){for(let i=0,n=1+(Math.random()*5|0);i<n;i++){const fx=cx+Rr+8+i*11;
   if(Math.random()<.55){const tn=pick(ids),nm=numName(tn);add({type:tn,ramp:1,fx,dx:fx-fcs,cx:fx-fc(TYPES[tn]),name:nm,label:nm,dir:'→'});}  // régi csomópont: 1–5 ág, út vagy lehajtó
   else{const k=pick(Object.keys(STATIONS)),nm=STATIONS[k];add({station:k,ramp:1,fx,dx:fx-fcs,name:nm,label:nm,dir:'→'});}}}
